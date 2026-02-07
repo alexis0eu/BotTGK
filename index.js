@@ -16,7 +16,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent   // <--- добавлен интент содержимого сообщений
+    GatewayIntentBits.MessageContent   // интент содержимого сообщений
   ],
   partials: [Partials.Channel]
 });
@@ -89,8 +89,8 @@ async function updateServerStatus() {
 // ===== сбор медиа из каналов (фото + видео) =====
 
 async function updateMedia() {
-  const videos = [];
-  const photos = [];
+  const newVideos = [];
+  const newPhotos = [];
 
   console.log('MEDIA_CHANNEL_IDS =', MEDIA_CHANNEL_IDS);
 
@@ -118,9 +118,9 @@ async function updateMedia() {
             const title = att.name || 'Медиа с TGK';
 
             if (isImage(url)) {
-              photos.push({ title, url });
+              newPhotos.push({ title, url });
             } else if (isVideo(url)) {
-              videos.push({ title, url });
+              newVideos.push({ title, url });
             }
 
             console.log('ATTACHMENT in', channelId, '->', url);
@@ -135,11 +135,15 @@ async function updateMedia() {
     }
   }
 
-  console.log('AFTER SCAN photos:', photos.length, 'videos:', videos.length);
+  console.log('AFTER SCAN photos:', newPhotos.length, 'videos:', newVideos.length);
 
-  // лимиты, чтобы не ронять фронт
-  cache.data.videos = videos.slice(0, 60);
-  cache.data.photos = photos.slice(0, 120);
+  // обновляем кэш только если что‑то нашли, чтобы не затирать прошлые данные нулями
+  if (newPhotos.length) {
+    cache.data.photos = newPhotos.slice(0, 120);
+  }
+  if (newVideos.length) {
+    cache.data.videos = newVideos.slice(0, 60);
+  }
 }
 
 // ===== общий рефреш кэша =====
