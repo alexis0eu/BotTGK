@@ -62,25 +62,30 @@ async function updateServerStatus() {
   }
 
   const guild = await client.guilds.fetch(GUILD_ID);
-  await guild.members.fetch();
 
   const total = guild.memberCount;
 
   // временный вариант: считаем всех как "онлайн"
   const online = total;
 
-  const sampleMembers = guild.members.cache
-    .filter(m => !m.user.bot)
-    .random(3)
-    .map(m => ({
+  // пробуем взять немного участников из кэша, без принудительного fetch
+  let members = guild.members.cache.filter(m => !m.user.bot);
+
+  if (members.size === 0) {
+    cache.data.sampleMembers = [];
+  } else {
+    const samples = members.random(Math.min(3, members.size));
+    const arr = Array.isArray(samples) ? samples : [samples];
+
+    cache.data.sampleMembers = arr.map(m => ({
       id: m.id,
       name: m.displayName,
       avatar: m.displayAvatarURL({ size: 64, extension: 'png' })
     }));
+  }
 
   cache.data.onlineMembers = online;
   cache.data.totalMembers = total;
-  cache.data.sampleMembers = sampleMembers;
 }
 
 // ===== сбор медиа из каналов =====
