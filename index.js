@@ -43,16 +43,6 @@ const cache = {
   }
 };
 
-// ===== помощники =====
-
-function isImage(url) {
-  return /\.(png|jpe?g|gif|webp)$/i.test(url);
-}
-
-function isVideo(url) {
-  return /\.(mp4|mov|webm|mkv)$/i.test(url);
-}
-
 // ===== обновление статуса сервера =====
 
 async function updateServerStatus() {
@@ -88,7 +78,7 @@ async function updateServerStatus() {
   cache.data.totalMembers = total;
 }
 
-// ===== сбор медиа из каналов =====
+// ===== сбор медиа из каналов (отладочная версия) =====
 
 async function updateMedia() {
   const videos = [];
@@ -116,14 +106,13 @@ async function updateMedia() {
 
         messages.forEach(msg => {
           msg.attachments.forEach(att => {
+            console.log('ATTACHMENT in', channelId, '->', att.url);
+
             const url = att.url;
             const title = att.name || 'Медиа с TGK';
 
-            if (isImage(url)) {
-              photos.push({ title, url });
-            } else if (isVideo(url)) {
-              videos.push({ title, url });
-            }
+            // пока всё кладём в photos, без фильтра по формату
+            photos.push({ title, url });
           });
         });
 
@@ -135,7 +124,7 @@ async function updateMedia() {
     }
   }
 
-  console.log('Found photos:', photos.length, 'videos:', videos.length);
+  console.log('AFTER SCAN photos:', photos.length, 'videos:', videos.length);
 
   cache.data.videos = videos.slice(0, 30);
   cache.data.photos = photos.slice(0, 60);
