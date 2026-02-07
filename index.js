@@ -15,9 +15,10 @@ app.use(cors({
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.GuildMessages
+    // если включишь интенты в портале, можно добавить:
+    // GatewayIntentBits.GuildMembers,
+    // GatewayIntentBits.MessageContent
   ],
   partials: [Partials.Channel]
 });
@@ -64,11 +65,9 @@ async function updateServerStatus() {
   await guild.members.fetch();
 
   const total = guild.memberCount;
-  const online = guild.members.cache.filter(m =>
-    !m.user.bot &&
-    m.presence &&
-    m.presence.status !== 'offline'
-  ).size;
+
+  // временный вариант: считаем всех как "онлайн"
+  const online = total;
 
   const sampleMembers = guild.members.cache
     .filter(m => !m.user.bot)
@@ -90,9 +89,13 @@ async function updateMedia() {
   const videos = [];
   const photos = [];
 
+  console.log('MEDIA_CHANNEL_IDS =', MEDIA_CHANNEL_IDS);
+
   for (const channelId of MEDIA_CHANNEL_IDS) {
     try {
       const channel = await client.channels.fetch(channelId);
+      console.log('Fetched channel', channelId, !!channel);
+
       if (!channel || !channel.isTextBased()) continue;
 
       let lastId = null;
@@ -101,6 +104,9 @@ async function updateMedia() {
           limit: 50,
           before: lastId || undefined
         });
+
+        console.log('Messages fetched:', messages.size, 'from', channelId);
+
         if (messages.size === 0) break;
 
         messages.forEach(msg => {
@@ -123,6 +129,8 @@ async function updateMedia() {
       console.error('Error reading channel', channelId, e);
     }
   }
+
+  console.log('Found photos:', photos.length, 'videos:', videos.length);
 
   cache.data.videos = videos.slice(0, 30);
   cache.data.photos = photos.slice(0, 60);
@@ -156,7 +164,7 @@ app.get('/tgk-status', (req, res) => {
   });
 });
 
-// healthcheck (можно использовать на Railway)
+// healthcheck
 app.get('/', (req, res) => {
   res.send('TGK bot + API is running');
 });
