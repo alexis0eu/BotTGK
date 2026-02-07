@@ -29,7 +29,7 @@ const MEDIA_CHANNEL_IDS = (process.env.MEDIA_CHANNEL_IDS || '')
   .map(id => id.trim())
   .filter(Boolean);
 
-// простейший кэш
+// простейший кэш для ответа API
 const cache = {
   ready: false,
   lastUpdate: null,
@@ -42,7 +42,7 @@ const cache = {
   }
 };
 
-// --- помощники ---
+// ===== помощники =====
 
 function isImage(url) {
   return /\.(png|jpe?g|gif|webp)$/i.test(url);
@@ -52,9 +52,14 @@ function isVideo(url) {
   return /\.(mp4|mov|webm|mkv)$/i.test(url);
 }
 
-// --- сбор инфы о сервере и медиа ---
+// ===== обновление статуса сервера =====
 
 async function updateServerStatus() {
+  if (!GUILD_ID) {
+    console.error('GUILD_ID is not set');
+    return;
+  }
+
   const guild = await client.guilds.fetch(GUILD_ID);
   await guild.members.fetch();
 
@@ -65,7 +70,6 @@ async function updateServerStatus() {
     m.presence.status !== 'offline'
   ).size;
 
-  // любые 3 участника как пример
   const sampleMembers = guild.members.cache
     .filter(m => !m.user.bot)
     .random(3)
@@ -80,7 +84,8 @@ async function updateServerStatus() {
   cache.data.sampleMembers = sampleMembers;
 }
 
-// собираем вложения из каналов
+// ===== сбор медиа из каналов =====
+
 async function updateMedia() {
   const videos = [];
   const photos = [];
@@ -90,7 +95,6 @@ async function updateMedia() {
       const channel = await client.channels.fetch(channelId);
       if (!channel || !channel.isTextBased()) continue;
 
-      // берём последние ~100 сообщений
       let lastId = null;
       for (let i = 0; i < 3; i++) {
         const messages = await channel.messages.fetch({
@@ -124,7 +128,8 @@ async function updateMedia() {
   cache.data.photos = photos.slice(0, 60);
 }
 
-// общий апдейт
+// ===== общий рефреш кэша =====
+
 async function refreshCache() {
   try {
     await updateServerStatus();
@@ -151,6 +156,11 @@ app.get('/tgk-status', (req, res) => {
   });
 });
 
+// healthcheck (можно использовать на Railway)
+app.get('/', (req, res) => {
+  res.send('TGK bot + API is running');
+});
+
 // ===== запуск всего =====
 
 const PORT = process.env.PORT || 8080;
@@ -159,11 +169,18 @@ client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   await refreshCache();
-  setInterval(refreshCache, 60 * 1000); // обновление раз в минуту
+  setInterval(refreshCache, 60 * 1000);
 
   app.listen(PORT, () => {
     console.log('API listening on port', PORT);
   });
 });
 
-client.login(process.env.DISCORD_TOKEN);
+// проверяем токен перед логином
+const token = process.env.DISCORD_TOKEN;
+if (!token || typeof token !== 'string') {
+  console.error('DISCORD_TOKEN is not set or invalid');
+  process.exit(1);
+}
+
+client.login(token);
