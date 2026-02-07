@@ -2,11 +2,12 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
 const cors = require('cors');
 
+// Берём данные из переменных окружения Railway
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
 const PORT = process.env.PORT || 3000;
 
-// Discord‑клиент
+// Создаём Discord‑клиент
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -15,10 +16,10 @@ const client = new Client({
   ]
 });
 
-// Express‑приложение
+// Создаём Express‑приложение
 const app = express();
 
-// Разрешаем CORS (пока всем, потом можно сузить до твоего домена)
+// Разрешаем CORS (можно сузить origin позже)
 app.use(cors({
   origin: '*',
 }));
@@ -82,9 +83,10 @@ app.get('/tgk-status', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+// Запуск HTTP‑сервера
 app.listen(PORT, () => {
   console.log('HTTP API запущено на порту', PORT);
 });
 
+// Логин бота
 client.login(TOKEN);
