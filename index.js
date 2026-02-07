@@ -43,6 +43,16 @@ const cache = {
   }
 };
 
+// ===== помощники =====
+
+function isImage(url) {
+  return /\.(png|jpe?g|gif|webp)$/i.test(url);
+}
+
+function isVideo(url) {
+  return /\.(mp4|mov|webm|mkv)$/i.test(url);
+}
+
 // ===== обновление статуса сервера =====
 
 async function updateServerStatus() {
@@ -78,7 +88,7 @@ async function updateServerStatus() {
   cache.data.totalMembers = total;
 }
 
-// ===== сбор медиа из каналов (отладочная версия) =====
+// ===== сбор медиа из каналов (фото + видео) =====
 
 async function updateMedia() {
   const videos = [];
@@ -106,13 +116,16 @@ async function updateMedia() {
 
         messages.forEach(msg => {
           msg.attachments.forEach(att => {
-            console.log('ATTACHMENT in', channelId, '->', att.url);
-
             const url = att.url;
             const title = att.name || 'Медиа с TGK';
 
-            // пока всё кладём в photos, без фильтра по формату
-            photos.push({ title, url });
+            if (isImage(url)) {
+              photos.push({ title, url });
+            } else if (isVideo(url)) {
+              videos.push({ title, url });
+            }
+
+            console.log('ATTACHMENT in', channelId, '->', url);
           });
         });
 
@@ -126,8 +139,9 @@ async function updateMedia() {
 
   console.log('AFTER SCAN photos:', photos.length, 'videos:', videos.length);
 
-  cache.data.videos = videos.slice(0, 30);
-  cache.data.photos = photos.slice(0, 60);
+  // лимиты, чтобы не ронять фронт
+  cache.data.videos = videos.slice(0, 60);
+  cache.data.photos = photos.slice(0, 120);
 }
 
 // ===== общий рефреш кэша =====
