@@ -15,10 +15,8 @@ app.use(cors({
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages
-    // если включишь интенты в портале, можно добавить:
-    // GatewayIntentBits.GuildMembers,
-    // GatewayIntentBits.MessageContent
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent   // <--- добавлен интент содержимого сообщений
   ],
   partials: [Partials.Channel]
 });
